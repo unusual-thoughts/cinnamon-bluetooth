@@ -33,7 +33,6 @@
 #include <bluetooth-client.h>
 #include <bluetooth-utils.h>
 #include <bluetooth-chooser.h>
-#include <bluetooth-plugin-manager.h>
 
 CC_PANEL_REGISTER (CcBluetoothPanel, cc_bluetooth_panel)
 
@@ -103,8 +102,6 @@ static void
 cc_bluetooth_panel_finalize (GObject *object)
 {
 	CcBluetoothPanel *self;
-
-	bluetooth_plugin_manager_cleanup ();
 
 	self = CC_BLUETOOTH_PANEL (object);
 	g_clear_object (&self->priv->builder);
@@ -267,22 +264,7 @@ add_extra_setup_widgets (CcBluetoothPanel *self,
 							"uuids", &value) == FALSE)
 		return;
 
-	uuids = (char **) g_value_get_boxed (&value);
-	list = bluetooth_plugin_manager_get_widgets (bdaddr, (const char **) uuids);
-	if (list == NULL) {
-		g_value_unset (&value);
-		return;
-	}
-
-	container = WID ("additional_setup_box");
-	for (l = list; l != NULL; l = l->next) {
-		GtkWidget *widget = l->data;
-		gtk_box_pack_start (GTK_BOX (container), widget,
-				    FALSE, FALSE, 0);
-		gtk_widget_show_all (widget);
-	}
-	gtk_widget_show (container);
-	g_value_unset (&value);
+	return;
 }
 
 static void
@@ -717,11 +699,6 @@ delete_clicked (GtkToolButton    *button,
 
 	name = bluetooth_chooser_get_selected_device_name (BLUETOOTH_CHOOSER (self->priv->chooser));
 
-	if (show_confirm_dialog (self, name) != FALSE) {
-		if (remove_selected_device (self))
-			bluetooth_plugin_manager_device_deleted (address);
-	}
-
 	g_free (address);
 	g_free (name);
 }
@@ -786,7 +763,6 @@ cc_bluetooth_panel_init (CcBluetoothPanel *self)
 
 	self->priv = BLUETOOTH_PANEL_PRIVATE (self);
 
-	bluetooth_plugin_manager_init ();
 	self->priv->client = bluetooth_client_new ();
 	self->priv->connecting_devices = g_hash_table_new_full (g_str_hash,
 								g_str_equal,
