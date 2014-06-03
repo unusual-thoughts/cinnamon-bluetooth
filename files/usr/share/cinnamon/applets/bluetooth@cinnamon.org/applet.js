@@ -216,29 +216,6 @@ MyApplet.prototype = {
                         
             GLib.spawn_command_line_sync ('pkill -f "^bluetooth-applet$"');
             this._applet = new GnomeBluetoothApplet.Applet();
-            this._killswitch = new PopupMenu.PopupSwitchMenuItem(_("Bluetooth"), false);
-            this._applet.connect('notify::killswitch-state', Lang.bind(this, this._updateKillswitch));
-            this._killswitch.connect('toggled', Lang.bind(this, function() {
-                let current_state = this._applet.killswitch_state;
-		if (ABI==6){
-			if (current_state != GnomeBluetooth.KillswitchState.HARD_BLOCKED &&
-			    current_state != GnomeBluetooth.KillswitchState.NO_ADAPTER) {
-			    this._applet.killswitch_state = this._killswitch.state ?
-				GnomeBluetooth.KillswitchState.UNBLOCKED:
-			        GnomeBluetooth.KillswitchState.SOFT_BLOCKED;
-			} else
-				this._killswitch.setToggleState(false);
-		} else {
-			if (current_state != GnomeBluetoothApplet.KillswitchState.HARD_BLOCKED &&
-			    current_state != GnomeBluetoothApplet.KillswitchState.NO_ADAPTER) {
-			    this._applet.killswitch_state = this._killswitch.state ?
-				GnomeBluetoothApplet.KillswitchState.UNBLOCKED:
-			        GnomeBluetoothApplet.KillswitchState.SOFT_BLOCKED;
-			} else
-				this._killswitch.setToggleState(false);
-		}
-		global.logError(this._killswitch.state)
-            }));
 
             this._discoverable = new PopupMenu.PopupSwitchMenuItem(_("Visibility"), this._applet.discoverable);
             this._applet.connect('notify::discoverable', Lang.bind(this, function() {
@@ -248,8 +225,6 @@ MyApplet.prototype = {
                 this._applet.discoverable = this._discoverable.state;
             }));
 
-            this._updateKillswitch();
-            this.menu.addMenuItem(this._killswitch);
             this.menu.addMenuItem(this._discoverable);
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
@@ -295,44 +270,7 @@ MyApplet.prototype = {
     on_applet_clicked: function(event) {
         this.menu.toggle();        
     },
-    
-   
-    _updateKillswitch: function() {
-        let current_state = this._applet.killswitch_state;
-	let on;
-	let has_adapter;
-	let can_toggle;
-	if (ABI==6){
-		on = current_state == GnomeBluetooth.KillswitchState.UNBLOCKED;
-		has_adapter = current_state != GnomeBluetooth.KillswitchState.NO_ADAPTER;
-		can_toggle = current_state != GnomeBluetooth.KillswitchState.NO_ADAPTER &&
-			         current_state != GnomeBluetooth.KillswitchState.HARD_BLOCKED;
-	} else {
-		on = current_state == GnomeBluetoothApplet.KillswitchState.UNBLOCKED;
-		has_adapter = current_state != GnomeBluetoothApplet.KillswitchState.NO_ADAPTER;
-		can_toggle = current_state != GnomeBluetoothApplet.KillswitchState.NO_ADAPTER &&
-			         current_state != GnomeBluetoothApplet.KillswitchState.HARD_BLOCKED;
-	}
-        this._killswitch.setToggleState(on);
-        if (can_toggle)
-            this._killswitch.setStatus(null);
-        else
-            /* TRANSLATORS: this means that bluetooth was disabled by hardware rfkill */
-            this._killswitch.setStatus(_("hardware disabled"));
 
-        if (has_adapter)
-            this.actor.show();
-        else
-            this.actor.hide();
-
-        if (on) {
-            this._discoverable.actor.show();
-            this.set_applet_icon_symbolic_name('bluetooth-active');
-        } else {
-            this._discoverable.actor.hide();
-            this.set_applet_icon_symbolic_name('bluetooth-disabled');
-        }
-    },
 
     _updateDevices: function() {
         let devices = this._applet.get_devices();
